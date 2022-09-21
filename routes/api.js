@@ -24,30 +24,33 @@ router.get('/books', (req, res) => {
     }
 })
 
-// router.get('/books/:id', (req, res) => {
-//     const {id} = req.params
+router.get('/books/:id', (req, res) => {
+    const {id} = req.params
     
-//     store.books.forEach(item => {
-//         if (item.id === id) {
-//             res.status(201).json(item)
-//         }
-//     })
+    store.books.forEach(item => {
+        if (item.id === id) {
+            res.status(201).json(item)
+        }
+    })
 
-//     res.status(404).json('Такой книги нет.')
-// })
+    res.status(404).json('Такой книги нет.')
+})
 
 router.post('/books', booksUploader.single('book'), (req, res) => {
-    if (req.file) {
-        const path = req.file.path 
-        const book = fs.readFileSync(path, {encoding: 'utf-8', flag: 'r'})
-        const parsedBook = JSON.parse(book)
+    if (req.body) {
+        const path = req.file.path
+        const fileName = req.file.filename
+        // const book = fs.readFileSync(path, {encoding: 'utf-8', flag: 'r'})
+        console.log(req.file)
+        const book = JSON.parse(req.body.data)
+        
         const newBook = new Book(
-            parsedBook.title,
-            parsedBook.description,
-            parsedBook.authors,
-            parsedBook.favorite,
-            parsedBook.fileCover,
-            parsedBook.fileName,
+            book.title,
+            book.description,
+            book.authors,
+            book.favorite,
+            book.fileCover,
+            fileName,
             path
         )
         // console.log(newBook)
@@ -63,7 +66,7 @@ router.post('/books', booksUploader.single('book'), (req, res) => {
     })
 })
 
-router.get('/books/:id', (req, res) => {
+router.get('/books/:id/download', (req, res) => {
     const {id} = req.params
 
     store.books.forEach((item) => {
