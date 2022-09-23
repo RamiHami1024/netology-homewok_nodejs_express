@@ -4,8 +4,10 @@ const booksUploader = require('../middleware/booksUploader')
 const fs = require('fs')
 const {v4: uuid} = require('uuid')
 
-router.get('/users', (req, res) => {
-    res.status(200).json(store.users)
+router.get('/', (req, res) => {
+    res.render('index', {
+        title: 'Главная'
+    })
 })
 
 router.post('/user/login', (req, res) => {
@@ -17,33 +19,34 @@ router.post('/user/login', (req, res) => {
 })
 
 router.get('/books', (req, res) => {
-    if (store.books.length) {
-        res.status(200).json(store.books)
-    } else {
-        res.status(200).json('Не создано ни одной книги')
-    }
+    res.render('books/index', {
+        title: 'Главная',
+        books: store.books
+    })
 })
 
 router.get('/books/:id', (req, res) => {
     const {id} = req.params
+    const book = store.books.find(i => i.id === id)
     
-    store.books.forEach(item => {
-        if (item.id === id) {
-            res.status(201).json(item)
-        }
+    res.render('books/view', {
+        title: 'book.title',
+        book: book
     })
-
-    res.status(404).json('Такой книги нет.')
 })
 
-router.post('/books', booksUploader.single('book'), (req, res) => {
-    if (req.body) {
+router.get('/book/create', (req, res) => {
+    res.render('books/create', {
+        title: 'Загрузить книгу',
+        book: {}
+    })
+})
+
+router.post('/book/create', booksUploader.single('book'), (req, res) => {
+    if (req.file) {
         const path = req.file.path
         const fileName = req.file.filename
-        // const book = fs.readFileSync(path, {encoding: 'utf-8', flag: 'r'})
-        console.log(req.file)
-        const book = JSON.parse(req.body.data)
-        
+        const book = req.body        
         const newBook = new Book(
             book.title,
             book.description,
@@ -53,12 +56,11 @@ router.post('/books', booksUploader.single('book'), (req, res) => {
             fileName,
             path
         )
-        // console.log(newBook)
-        store.books.push(newBook)
-        console.log(store.books)
-        res.json(newBook)
 
-        return
+        store.books.push(newBook)
+        res.redirect('/books')
+
+        return true
     }
 
     res.json({
@@ -68,29 +70,31 @@ router.post('/books', booksUploader.single('book'), (req, res) => {
 
 router.get('/books/:id/download', (req, res) => {
     const {id} = req.params
+    const book = store.books.find(i => i.id === id)
+    
+    res.download(book.fileBook)
+})
 
-    store.books.forEach((item) => {
-        if (item.id === id) {
-            res.download(item.fileBook)
-        } 
+router.get('/books/update/:id', (req, res) => {
+    const {id} = req.params
+    const book = store.books.find(i => i.id === id)
+    res.render('books/update', {
+        title: 'Редактировать книгу',
+        book: book
     })
 })
 
-router.put('/books/:id', (req, res) => {
+router.post('/books/update/:id', booksUploader.single('book'), (req, res) => {
     const {id} = req.params
+    const idx = store.books.findIndex(i => i.id === id)
+    fs.unlinkSync(`./${store.books[idx].fileBook}`)
+
+    store.books[idx] = {
+        ...store.books[idx],
+        ...req.body
+    }
     
-    store.books.forEach((item, key) => {
-        if (item.id === id) {
-            store.books[key] = {
-                ...store.books[key],
-                ...req.body
-            }
-
-            res.status(201).json(store.books[key])
-        }
-    })
-
-    res.status(404).json('Книга не найдена')
+    res.redirect(`/books/${id}`)
 })
 
 router.delete('/books/:id', (req, res) => {

@@ -1,9 +1,10 @@
 const express = require('express')
-const api = require('./routes/api')
+const api = require('./routes/main')
 
 const app = express();
 
 app
-    .use('/api/', api)
+    .use('/', api)
     .use(express.json())
+    .set('view engine', 'ejs')
     .listen(3000)
